@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { LayoutDashboard, History, ArrowUpFromLine, ArrowDownToLine, Send, User, MessageSquare } from "lucide-react"
