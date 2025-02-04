@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, ChangeEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -27,7 +27,7 @@ export default function EmailModulePage() {
         { id: 'user8', email: 'user8@example.com' },
       ];
 
-  const handleSendEmail = (e: React.FormEvent) => {
+  const handleSendEmail = (e: ChangeEvent) => {
     e.preventDefault()
     const recipients = selectAll ? 'All users' : selectedRecipients.join(", ")
     // TODO: Integrate with backend API to send email
@@ -77,10 +77,6 @@ export default function EmailModulePage() {
                                 <Label htmlFor={user.id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{user.email}</Label>
                             </div>
                         ))}
-                    </div>
-                </ScrollArea>
-                <Label htmlFor="email">User Email</Label>
-                <Input id="email" type="email" placeholder="Enter user email" required />
               </div>
             )}
             <div>
@@ -108,18 +104,14 @@ export default function EmailModulePage() {
           </form>
         </CardContent>
       </Card>
+       {/* Update selectedRecipients when selectAll changes */}
+       {useEffect(() => {
+        if (selectAll) {
+            setSelectedRecipients(users.map(user => user.id));
+        } else {
+            setSelectedRecipients([]);
+        }
+    }, [selectAll])}
     </div>
   )
 }
-
-// Update selectedRecipients when selectAll changes
-useEffect(() => {
-    if (selectAll) {
-        setSelectedRecipients(users.map(user => user.id));
-    } else {
-        setSelectedRecipients([]);
-    }
-}, [selectAll]);
-
-}
-

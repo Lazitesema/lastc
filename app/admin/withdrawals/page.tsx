@@ -78,7 +78,7 @@ export default function WithdrawalRequestsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
       <h1 className="text-2xl font-bold">Withdrawal Requests</h1>
 
       <Card>
@@ -131,6 +131,7 @@ export default function WithdrawalRequestsPage() {
           </Table>
         </CardContent>
       </Card>
+      </Card>
 
       {/* Approve/Reject Modal */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -152,7 +153,7 @@ export default function WithdrawalRequestsPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }
 
@@ -305,4 +306,3 @@ function WithdrawalReviewForm({
     </ScrollArea>
   )
 }
-

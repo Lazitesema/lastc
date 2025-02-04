@@ -360,12 +360,7 @@ function UserDetailForm({
   const [rejectionReason, setRejectionReason] = useState("")
   const [selectedSendLimit, setSelectedSendLimit] = useState<'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom' | 'nolimit'>('nolimit');
   onUpdateLimits: (userId: number, type: "send" | "withdraw", limit: number | null) => void
-  onDelete: (userId: number) => void
-}) {
-  const [balanceChange, setBalanceChange] = useState("")
-  const [sendLimit, setSendLimit] = useState(user.sendLimit?.toString() || "")
-  const [withdrawLimit, setWithdrawLimit] = useState(user.withdrawLimit?.toString() || "")
-  const [rejectionReason, setRejectionReason] = useState("")
+
 
   const handleBalanceChange = (e: React.FormEvent) => {
     e.preventDefault()
@@ -508,7 +503,7 @@ function UserDetailForm({
             )}
           </div>
         </>
-       ) : (
+        ) : (
         <Button variant="destructive" onClick={() => onDelete(user.id)}>Delete User</Button>
       )}
      {user.status !== "Pending" && (
