@@ -1,17 +1,26 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-const data = [
-  { name: "Jan", value: 400 },
-  { name: "Feb", value: 300 },
-  { name: "Mar", value: 200 },
-  { name: "Apr", value: 278 },
-  { name: "May", value: 189 },
-]
+const allMonthsData = [
+    { name: "Jan", value: 400 },
+    { name: "Feb", value: 300 },
+    { name: "Mar", value: 200 },
+    { name: "Apr", value: 278 },
+    { name: "May", value: 189 },
+    { name: "Jun", value: 239 },
+    { name: "Jul", value: 389 },
+    { name: "Aug", value: 129 },
+    { name: "Sep", value: 279 },
+    { name: "Oct", value: 159 },
+    { name: "Nov", value: 339 },
+    { name: "Dec", value: 289 },
+  ];
 
 const recentTransactions = [
   { id: 1, user: "John Doe", type: "Deposit", amount: 1000, date: "2023-07-05" },
@@ -20,7 +29,15 @@ const recentTransactions = [
   // Add more transactions as needed
 ]
 
+const monthNames = [
+  "All Months",
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+];
+
 export default function AdminDashboard() {
+    const [selectedMonth, setSelectedMonth] = useState("All Months");
+    const filteredData = selectedMonth === "All Months" ? allMonthsData : allMonthsData.filter(item => item.name === selectedMonth);
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Admin Dashboard</h1>
@@ -31,14 +48,27 @@ export default function AdminDashboard() {
         <MetricCard title="Total Transfers" value="$12,345" />
         <MetricCard title="Total Fees" value="$2,345" />
         <MetricCard title="Total Users" value="890" />
+        <MetricCard title="Total Fees" value="$10,456" />
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Transaction Overview</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Transaction Overview</CardTitle>
+            <Select onValueChange={setSelectedMonth} defaultValue="All Months">
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="All Months" />
+                </SelectTrigger>
+                <SelectContent>
+                    {monthNames.map((month) => (
+                        <SelectItem key={month} value={month}>{month}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data}>
+            <BarChart data={filteredData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />

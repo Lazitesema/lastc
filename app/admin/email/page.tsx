@@ -1,23 +1,39 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 export default function EmailModulePage() {
-  const [recipient, setRecipient] = useState("all")
+  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([])
+  const [selectAll, setSelectAll] = useState(false);
   const [subject, setSubject] = useState("")
   const [message, setMessage] = useState("")
 
+    // Placeholder for user data
+    const users = [
+        { id: 'user1', email: 'user1@example.com' },
+        { id: 'user2', email: 'user2@example.com' },
+        { id: 'user3', email: 'user3@example.com' },
+        { id: 'user4', email: 'user4@example.com' },
+        { id: 'user5', email: 'user5@example.com' },
+        { id: 'user6', email: 'user6@example.com' },
+        { id: 'user7', email: 'user7@example.com' },
+        { id: 'user8', email: 'user8@example.com' },
+      ];
+
   const handleSendEmail = (e: React.FormEvent) => {
     e.preventDefault()
+    const recipients = selectAll ? 'All users' : selectedRecipients.join(", ")
     // TODO: Integrate with backend API to send email
-    console.log("Sending email:", { recipient, subject, message })
+    console.log("Sending email:", { recipients, subject, message })
     // Reset form
+    setSelectedRecipients([])
     setSubject("")
     setMessage("")
   }
@@ -32,20 +48,37 @@ export default function EmailModulePage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSendEmail} className="space-y-4">
-            <div>
-              <Label htmlFor="recipient">Recipient</Label>
-              <Select onValueChange={setRecipient} defaultValue={recipient}>
-                <SelectTrigger id="recipient">
-                  <SelectValue placeholder="Select recipient" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Users</SelectItem>
-                  <SelectItem value="individual">Individual User</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {recipient === "individual" && (
-              <div>
+            <div className="space-y-2">
+                <Label>Recipients</Label>
+                <div className="flex items-center space-x-2">
+                    <Checkbox
+                        id="selectAll"
+                        checked={selectAll}
+                        onCheckedChange={(checked) => {
+                            setSelectAll(checked ?? false);
+                            setSelectedRecipients(checked ? users.map(user => user.id) : []);
+                        }}
+                    />
+                    <Label htmlFor="selectAll" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        Select All Users
+                    </Label>
+                </div>
+                <ScrollArea className="h-[150px] w-full rounded-md border">
+                    <div className="p-4">
+                        {users.map(user => (
+                            <div key={user.id} className="flex items-center space-x-2 py-1">
+                                <Checkbox
+                                    id={user.id}
+                                    checked={selectedRecipients.includes(user.id)}
+                                    onCheckedChange={(checked) => {
+                                        setSelectedRecipients(checked ? [...selectedRecipients, user.id] : selectedRecipients.filter(id => id !== user.id));
+                                    }}
+                                />
+                                <Label htmlFor={user.id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{user.email}</Label>
+                            </div>
+                        ))}
+                    </div>
+                </ScrollArea>
                 <Label htmlFor="email">User Email</Label>
                 <Input id="email" type="email" placeholder="Enter user email" required />
               </div>
@@ -77,5 +110,16 @@ export default function EmailModulePage() {
       </Card>
     </div>
   )
+}
+
+// Update selectedRecipients when selectAll changes
+useEffect(() => {
+    if (selectAll) {
+        setSelectedRecipients(users.map(user => user.id));
+    } else {
+        setSelectedRecipients([]);
+    }
+}, [selectAll]);
+
 }
 

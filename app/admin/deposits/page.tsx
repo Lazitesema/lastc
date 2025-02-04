@@ -2,12 +2,12 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import Image from "next/image"
+
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 // Mock deposit requests data
@@ -45,6 +45,7 @@ export default function DepositRequestsPage() {
   const [requests, setRequests] = useState(mockDepositRequests)
   const [selectedRequest, setSelectedRequest] = useState<(typeof mockDepositRequests)[0] | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
 
   const handleApprove = (requestId: number) => {
     // TODO: Integrate with backend API to approve deposit request
@@ -90,16 +91,29 @@ export default function DepositRequestsPage() {
                   <TableCell>{request.status}</TableCell>
                   <TableCell>
                     {request.status === "Pending" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedRequest(request)
-                          setIsDialogOpen(true)
-                        }}
-                      >
-                        Review
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedRequest(request)
+                            setIsDialogOpen(true)
+                          }}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedRequest(request)
+                            setIsDetailDialogOpen(true)
+                          }}
+                        >
+                          Detail View
+                        </Button>
+                      </div>
+
                     )}
                   </TableCell>
                 </TableRow>
@@ -119,6 +133,14 @@ export default function DepositRequestsPage() {
           )}
         </DialogContent>
       </Dialog>
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Deposit Request Details</DialogTitle>
+          </DialogHeader>
+          {selectedRequest && <DepositDetailView request={selectedRequest} />}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -133,49 +155,33 @@ function DepositReviewForm({
   onReject: (requestId: number, reason: string) => void
 }) {
   const [rejectionReason, setRejectionReason] = useState("")
-
   return (
     <ScrollArea className="h-[60vh]">
-      <div className="space-y-4 pr-4">
-        <div>
-          <Label>Username</Label>
-          <p>{request.username}</p>
-        </div>
-        <div>
-          <Label>Amount</Label>
-          <p>{request.amount} ETB</p>
-        </div>
-        <div>
-          <Label>Date</Label>
-          <p>{request.date}</p>
-        </div>
-        <div>
-          <Label>Receipt</Label>
-          <div className="mt-2">
-            <Image
-              src={request.receipt || "/placeholder.svg"}
-              alt="Receipt"
-              width={200}
-              height={300}
-              className="rounded-md"
-            />
+      <div className="space-y-2 pr-4">
+        <DetailItem label="Username" value={request.username} />
+        <DetailItem label="Amount" value={`${request.amount} ETB`} />
+        <DetailItem label="Date" value={request.date} />
+        <DetailItem label="Receipt">
+          <div className="w-52 h-72 relative">
+          <img
+            src={request.receipt || "/placeholder.svg"}
+            alt="Receipt"
+            fill
+            className="object-contain rounded-md"
+            style={{ objectFit: 'contain' }}
+          />
           </div>
-        </div>
+        </DetailItem>
         <div className="flex space-x-2">
           <Button onClick={() => onApprove(request.id)}>Approve</Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              if (rejectionReason) onReject(request.id, rejectionReason)
-            }}
-          >
+          <Button variant="outline" onClick={() => onReject(request.id, rejectionReason)}>
             Reject
           </Button>
         </div>
         <div>
-          <Label htmlFor="rejectionReason">Rejection Reason</Label>
-          <Input
-            id="rejectionReason"
+          <Label htmlFor="rejectionReason" className="text-sm">Rejection Reason</Label>
+          <textarea
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             value={rejectionReason}
             onChange={(e) => setRejectionReason(e.target.value)}
             placeholder="Enter reason for rejection"
@@ -185,4 +191,33 @@ function DepositReviewForm({
     </ScrollArea>
   )
 }
+
+const DetailItem = ({ label, value, children }: { label: string; value?: string; children?: React.ReactNode }) => (
+  <div>
+    <Label className="text-sm">{label}</Label>
+    <p className="text-gray-600">{value || children}</p>
+  </div>
+)
+
+const DepositDetailView = ({ request }: { request: (typeof mockDepositRequests)[0] }) => (
+  <ScrollArea className="h-[60vh]">
+    <div className="space-y-2 pr-4">
+      <DetailItem label="Username" value={request.username} />
+      <DetailItem label="Amount" value={`${request.amount} ETB`} />
+      <DetailItem label="Date" value={request.date} />
+      <DetailItem label="Status" value={request.status} />
+      <DetailItem label="Receipt">
+        <div className="w-52 h-72 relative">
+          <img
+            src={request.receipt || "/placeholder.svg"}
+            alt="Receipt"
+            fill
+            className="object-contain rounded-md"
+            style={{ objectFit: 'contain' }}
+          />
+        </div>
+      </DetailItem>
+    </div>
+  </ScrollArea>
+)
 

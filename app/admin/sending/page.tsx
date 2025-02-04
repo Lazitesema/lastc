@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -43,6 +43,7 @@ export default function SendingRequestsPage() {
   const [requests, setRequests] = useState(mockSendingRequests)
   const [selectedRequest, setSelectedRequest] = useState<(typeof mockSendingRequests)[0] | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
   const handleApprove = (requestId: number) => {
     // TODO: Integrate with backend API to approve sending request
@@ -59,6 +60,11 @@ export default function SendingRequestsPage() {
     // TODO: Send email notification to user
     console.log(`Rejected sending request ${requestId} with reason: ${reason}`)
   }
+  const openDetailDialog = (request: (typeof mockSendingRequests)[0]) => {
+    setSelectedRequest(request);
+    setIsDetailDialogOpen(true);
+  };
+
 
   return (
     <div className="space-y-6">
@@ -89,18 +95,26 @@ export default function SendingRequestsPage() {
                   <TableCell>{request.date}</TableCell>
                   <TableCell>{request.status}</TableCell>
                   <TableCell>
-                    {request.status === "Pending" && (
+                    <div className="flex space-x-2">
                       <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedRequest(request)
-                          setIsDialogOpen(true)
-                        }}
+                        variant="secondary"
+                        onClick={() => openDetailDialog(request)}
                       >
-                        Review
+                        Detail View
                       </Button>
-                    )}
+                      {request.status === "Pending" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedRequest(request)
+                            setIsDialogOpen(true)
+                          }}
+                        >
+                          Approve
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -116,6 +130,18 @@ export default function SendingRequestsPage() {
           </DialogHeader>
           {selectedRequest && (
             <SendingReviewForm request={selectedRequest} onApprove={handleApprove} onReject={handleReject} />
+          )}
+        </DialogContent>
+      </Dialog>
+
+
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sending Request Details</DialogTitle>
+          </DialogHeader>
+          {selectedRequest && (
+            <SendingDetailView request={selectedRequest} />
           )}
         </DialogContent>
       </Dialog>
@@ -153,11 +179,11 @@ function SendingReviewForm({
         <p>{request.date}</p>
       </div>
       <div className="flex space-x-2">
-        <Button onClick={() => onApprove(request.id)}>Approve</Button>
+        <Button onClick={() => onApprove(request.id)}>Approve</Button>{" "}
         <Button
           variant="outline"
           onClick={() => {
-            if (rejectionReason) onReject(request.id, rejectionReason)
+            if (rejectionReason) onReject(request.id, rejectionReason);
           }}
         >
           Reject
@@ -175,4 +201,32 @@ function SendingReviewForm({
     </div>
   )
 }
+
+function SendingDetailView({ request }: { request: (typeof mockSendingRequests)[0] }) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label>Request ID</Label>
+        <p>{request.id}</p>
+      </div>
+      <div>
+        <Label>Sender</Label>
+        <p>{request.senderUsername}</p>
+      </div>
+      <div>
+        <Label>Recipient</Label>
+        <p>{request.recipientUsername}</p>
+      </div>
+      <div>
+        <Label>Amount</Label>
+        <p>{request.amount} ETB</p>
+      </div>
+      <div>
+        <Label>Date</Label>
+        <p>{request.date}</p>
+      </div>
+    </div>
+  );
+}
+
 

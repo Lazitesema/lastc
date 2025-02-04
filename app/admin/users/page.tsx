@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useState, ChangeEvent } from "react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -10,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import Image from "next/image"
 
+import { cn } from "@/lib/utils"
 // Mock user data
 const mockUsers = [
   {
@@ -24,7 +26,8 @@ const mockUsers = [
     nationality: "USA",
     status: "Active",
     balance: 1000,
-    sendLimit: 5000,
+    sendLimit: 5000, // Added limits
+    role: "user",
     withdrawLimit: 10000,
     idCard: "/johndoe.jpg", // Added ID card path
   },
@@ -40,6 +43,7 @@ const mockUsers = [
     nationality: "UK",
     status: "Pending",
     balance: 500,
+    role: "user",
     sendLimit: null,
     withdrawLimit: null,
     idCard: "/janesmith.jpg", // Added ID card path
@@ -56,7 +60,7 @@ export default function UsersManagement() {
   const [isUserDetailDialogOpen, setIsUserDetailDialogOpen] = useState(false)
 
   const handleCreateUser = (
-    userData: Omit<(typeof mockUsers)[0], "id" | "balance" | "status" | "idCard"> & { idCard: File | null },
+    userData: Omit<(typeof mockUsers)[0], "id" | "balance" | "status" | "idCard" > & { idCard?: File | null },
   ) => {
     // TODO: Integrate with backend API to create new user
     const newUser = {
@@ -216,7 +220,7 @@ export default function UsersManagement() {
           </ScrollArea>
         </DialogContent>
       </Dialog>
-
+      
       <Dialog open={isUserDetailDialogOpen} onOpenChange={setIsUserDetailDialogOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
@@ -244,6 +248,7 @@ function CreateUserForm({ onSubmit }: { onSubmit: (userData: any) => void }) {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
+    role:"user",
     username: "",
     email: "",
     dateOfBirth: "",
@@ -255,12 +260,20 @@ function CreateUserForm({ onSubmit }: { onSubmit: (userData: any) => void }) {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    onSubmit({ ...formData, idCard: formData.idCard })
+    onSubmit({ ...formData })
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement| HTMLTextAreaElement>) => {
     if (e.target.type === "file") {
       setFormData({ ...formData, [e.target.name]: e.target.files![0] })
+    } else if (e.target.name === "role"){
+      setFormData((prev) => ({
+        ...prev,
+        [e.target.name]: e.target.value as "admin" | "user",
+      }));
+    }
+    else if(e.target.type === "textarea"){
+      setFormData({ ...formData, [e.target.name]: e.target.value })
     } else {
       setFormData({ ...formData, [e.target.name]: e.target.value })
     }
@@ -269,10 +282,18 @@ function CreateUserForm({ onSubmit }: { onSubmit: (userData: any) => void }) {
   return (
     <ScrollArea className="h-[400px] pr-4">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
+      <div>
           <Label htmlFor="firstName">First Name</Label>
           <Input id="firstName" name="firstName" value={formData.firstName} onChange={handleChange} required />
         </div>
+        <div>
+          <Label htmlFor="role">Role</Label>
+          <select id="role" name="role" onChange={handleChange} value={formData.role} className="border p-2 w-full rounded-md">
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+
         <div>
           <Label htmlFor="lastName">Last Name</Label>
           <Input id="lastName" name="lastName" value={formData.lastName} onChange={handleChange} required />
@@ -309,10 +330,10 @@ function CreateUserForm({ onSubmit }: { onSubmit: (userData: any) => void }) {
           <Input id="nationality" name="nationality" value={formData.nationality} onChange={handleChange} required />
         </div>
         <div>
-          <Label htmlFor="idCardUpload">ID Card Upload</Label>
-          <Input id="idCardUpload" name="idCard" type="file" onChange={handleChange} />
+          <Label htmlFor="idCard">ID Card Upload</Label>
+          <Input id="idCard" name="idCard" type="file" onChange={handleChange}  />
         </div>
-        <Button type="submit">Create User</Button>
+        <Button type="submit" >Create User</Button>
       </form>
     </ScrollArea>
   )
@@ -326,10 +347,18 @@ function UserDetailForm({
   onUpdateLimits,
   onDelete,
 }: {
-  user: (typeof mockUsers)[0]
+  user: (typeof mockUsers)[0];
   onApprove: (userId: number) => void
   onReject: (userId: number) => void
   onUpdateBalance: (userId: number, amount: number) => void
+  onUpdateLimits: (userId: number, type: "send" | "withdraw", limit: number | null) => void
+  onDelete: (userId: number) => void
+}) {
+  const [balanceChange, setBalanceChange] = useState("")
+  const [sendLimit, setSendLimit] = useState(user.sendLimit?.toString() || "")
+  const [withdrawLimit, setWithdrawLimit] = useState(user.withdrawLimit?.toString() || "")
+  const [rejectionReason, setRejectionReason] = useState("")
+  const [selectedSendLimit, setSelectedSendLimit] = useState<'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom' | 'nolimit'>('nolimit');
   onUpdateLimits: (userId: number, type: "send" | "withdraw", limit: number | null) => void
   onDelete: (userId: number) => void
 }) {
@@ -352,6 +381,14 @@ function UserDetailForm({
     const parsedLimit = limit === "" ? null : Number.parseFloat(limit)
     onUpdateLimits(user.id, type, parsedLimit)
   }
+
+  const handleSendLimitSelectChange = (value: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom' | 'nolimit') => {
+    setSelectedSendLimit(value);
+    if(value === 'nolimit'){
+      setSendLimit("")
+      handleLimitChange('send')
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -384,8 +421,16 @@ function UserDetailForm({
         <p>{user.nationality}</p>
       </div>
       <div>
-        <Label>Current Balance</Label>
-        <p>{user.balance} ETB</p>
+        {user.status !== "Pending" && ( <>
+          <Label>Current Balance</Label>
+          <p>{user.balance} ETB</p>
+        </>)}
+      </div>
+        <div>
+          <Label>ID Card</Label>
+        {user.idCard ? (
+          <Image src={user.idCard} alt="ID Card" width={200} height={200} />
+        ) : (<p>No ID Card uploaded</p>)}
       </div>
       <form onSubmit={handleBalanceChange} className="space-y-2">
         <Label htmlFor="balanceChange">Add/Deduct Balance</Label>
@@ -400,35 +445,61 @@ function UserDetailForm({
           <Button type="submit">Update Balance</Button>
         </div>
       </form>
-      <div className="space-y-2">
-        <Label htmlFor="sendLimit">Send Limit</Label>
-        <div className="flex space-x-2">
-          <Input
-            id="sendLimit"
-            type="number"
-            value={sendLimit}
-            onChange={(e) => setSendLimit(e.target.value)}
-            placeholder="No limit"
-          />
-          <Button onClick={() => handleLimitChange("send")}>Set Limit</Button>
+      <div>
+        <Label htmlFor="sendLimitSelect">Send Limit</Label>
+        <div className="flex space-x-2 items-center">
+          <Select onValueChange={handleSendLimitSelectChange} defaultValue={selectedSendLimit}>
+            <SelectTrigger id="sendLimitSelect" className="w-[180px]">
+              <SelectValue placeholder="Select Limit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="daily">Daily</SelectItem>
+              <SelectItem value="weekly">Weekly</SelectItem>
+              <SelectItem value="monthly">Monthly</SelectItem>
+              <SelectItem value="yearly">Yearly</SelectItem>
+              <SelectItem value="custom">Custom day</SelectItem>
+              <SelectItem value="nolimit">No Limit</SelectItem>
+            </SelectContent>
+          </Select>
+          {selectedSendLimit !== "nolimit" && (
+            <>
+              <Input
+                id="sendLimit"
+                type="number"
+                value={sendLimit}
+                onChange={(e) => setSendLimit(e.target.value)}
+                placeholder="Enter amount"
+                className="w-[120px]"
+              />
+              {selectedSendLimit === "custom" && (
+                <Input
+                  type="number"
+                  placeholder="Days"
+                  className="w-[80px]"
+                  />
+              )}
+              <Button onClick={() => handleLimitChange("send")}>Set Limit</Button>
+            </>
+          )}
         </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="withdrawLimit">Withdraw Limit</Label>
-        <div className="flex space-x-2">
-          <Input
-            id="withdrawLimit"
-            type="number"
-            value={withdrawLimit}
-            onChange={(e) => setWithdrawLimit(e.target.value)}
-            placeholder="No limit"
-          />
-          <Button onClick={() => handleLimitChange("withdraw")}>Set Limit</Button>
-        </div>
-      </div>
-      {user.status === "Pending" && (
+
+      
+
+      {user.status === "Pending" ? (
         <>
+        <div className="space-y-2">
+        </div>
+          <div className="space-y-2">
+            <div className="flex space-x-2">
+              <Button onClick={() => onApprove(user.id)}>Approve User</Button>
+              <Button variant="destructive" onClick={() => onReject(user.id)}>Reject User</Button>
+            </div>
           <div>
+            <Label htmlFor="rejectionReason">Rejection Reason</Label>
+            <Input id="rejectionReason" value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Enter reason for rejection" />
+          </div>
+        </div>
             <Label>ID Card</Label>
             {user.idCard ? (
               <Image src={user.idCard || "/placeholder.svg"} alt="ID Card" width={200} height={200} />
@@ -436,29 +507,16 @@ function UserDetailForm({
               <p>No ID Card uploaded</p>
             )}
           </div>
-          <div className="space-y-2">
-            <div className="flex space-x-2">
-              <Button onClick={() => onApprove(user.id)}>Approve User</Button>
-              <Button variant="destructive" onClick={() => onReject(user.id)}>
-                Reject User
-              </Button>
-            </div>
-            <div>
-              <Label htmlFor="rejectionReason">Rejection Reason</Label>
-              <Input
-                id="rejectionReason"
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Enter reason for rejection"
-              />
-            </div>
-          </div>
         </>
+       ) : (
+        <Button variant="destructive" onClick={() => onDelete(user.id)}>Delete User</Button>
       )}
+     {user.status !== "Pending" && (
       <Button variant="destructive" onClick={() => onDelete(user.id)}>
         Delete User
       </Button>
-    </div>
+    )}
+   </div>
   )
 }
 
